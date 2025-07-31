@@ -1,28 +1,23 @@
 const axios = require('axios');
 
-// Function to fetch subreddit suggestions
 async function fetchSubredditSuggestions(query) {
-    try {
-        const response = await axios.get(`https://www.reddit.com/api/subreddit_autocomplete.json?query=${query}`);
-        return response.data.subreddits.map(sub => sub.name);
-    } catch (error) {
-        console.error('Error fetching subreddit suggestions:', error);
-        return [];
-    }
+  try {
+    const response = await axios.get(`https://www.reddit.com/subreddits/search.json?q=${query}`);
+    return response.data.data.children.map(sub => sub.data.display_name);
+  } catch (error) {
+    console.error('Error fetching subreddit suggestions:', error);
+    return [];
+  }
 }
 
-// Function to fetch the latest post from a subreddit
-async function fetchLatestPost(subreddit) {
-    try {
-        const response = await axios.get(`https://www.reddit.com/r/${subreddit}/new.json?limit=1`);
-        if (response.data.data.children.length > 0) {
-            return response.data.data.children[0].data;
-        }
-        return null;
-    } catch (error) {
-        console.error(`Error fetching latest post from r/${subreddit}:`, error);
-        return null;
-    }
+async function fetchPosts(subreddit, filter) {
+  try {
+    const response = await axios.get(`https://www.reddit.com/r/${subreddit}/${filter}.json?limit=5`);
+    return response.data.data.children;
+  } catch (error) {
+    console.error(`Error fetching ${filter} posts from r/${subreddit}:`, error);
+    return [];
+  }
 }
 
-module.exports = { fetchSubredditSuggestions, fetchLatestPost };
+module.exports = { fetchSubredditSuggestions, fetchPosts };
