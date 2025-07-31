@@ -53,5 +53,38 @@ for (const file of eventFiles) {
     }
 }
 
+
+client.on('interactionCreate', async interaction => {
+  if (!interaction.isButton()) return;
+
+  const [action, value] = interaction.customId.split('_');
+  const { loadTrackedSubreddits, saveTrackedSubreddits } = require('./utils/dataUtils');
+  const { fetchPosts } = require('./utils/redditAPI');
+  const trackedSubreddits = loadTrackedSubreddits();
+
+  // Handle subreddit tracking buttons
+  if (action === 'track') {
+    trackedSubreddits.push(value);
+    saveTrackedSubreddits(trackedSubreddits);
+    await interaction.update({ content: `✅ Now tracking r/${value}!`, components: [] });
+  }
+
+  // Handle post filter buttons
+  if (action === 'filter') {
+    const subreddit = trackedSubreddits[0]; // Or let users pick which subreddit
+    const posts = await fetchPosts(subreddit, value);
+    if (posts.length === 0) {
+      return interaction.update({ content: `❌ No ${value} posts found in r/${subreddit}.`, components: [] });
+    }
+
+    const postList = posts.slice(0, 3).map(post => `• [${post.data.title}](${post.data.url})`).join('\n');
+
+    await interaction.update({
+      content: `**Top 3 ${value.toUpperCase()} Posts in r/${subreddit}:**\n${postList}`, components: [],});
+  }
+});
+
+
+
 // Login to Discord
 client.login(token);
