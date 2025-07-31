@@ -1,37 +1,34 @@
-const { SlashCommandBuilder } = require('discord.js');
-const { fetchLatestPost } = require('../../utils/redditAPI');
-const { validateSubreddit } = require('../../utils/validateSubreddit');
+const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const { loadTrackedSubreddits } = require('../../utils/dataUtils');
 
 module.exports = {
-    data: new SlashCommandBuilder()
-        .setName('getlatestpost')
-        .setDescription('Get the latest post from a subreddit')
-        .addStringOption(option =>
-            option.setName('subreddit')
-                .setDescription('Name of the subreddit (e.g., "programming")')
-                .setRequired(true)),
-
-    async execute(interaction) {
-        const input = interaction.options.getString('subreddit');
-        const { isValid, error, suggestions, normalized } = await validateSubreddit(input);
-
-        if (!isValid) {
-            let reply = `${error}\n`;
-            reply += suggestions.length > 0 
-                ? `Did you mean: ${suggestions.map(s => `\`${s}\``).join(', ')}?` 
-                : 'No similar subreddits found.';
-            return interaction.reply(reply);
-        }
-
-        const post = await fetchLatestPost(normalized);
-        if (!post) {
-            return interaction.reply(`Could not fetch posts from \`${normalized}\`. Does the subreddit exist?`);
-        }
-
-        return interaction.reply(
-            `Latest post in /r/${normalized}:\n` +
-            `**${post.title}** by u/${post.author}\n` +
-            `${post.url}`
-        );
+  data: new SlashCommandBuilder()
+    .setName('listsubreddits') // Keep lowercase for Discord
+    .setDescription('List tracked subreddits with filters'),
+  async execute(interaction) {
+    const trackedSubreddits = loadTrackedSubreddits();
+    if (trackedSubreddits.length === 0) {
+      return interaction.reply('No subreddits tracked yet. Use `/tracksubreddit` first!');
     }
+
+    const filterButtons = new ActionRowBuilder().addComponents(
+      new ButtonBuilder()
+        .setCustomId('filter_top')
+        .setLabel('Top Posts')
+        .setStyle(ButtonStyle.Success),
+      new ButtonBuilder()
+        .setCustomId('filter_hot')
+        .setLabel('Hot Posts')
+        .setStyle(ButtonStyle.Danger),
+      new ButtonBuilder()
+        .setCustomId('filter_new')
+        .setLabel('New Posts')
+        .setStyle(ButtonStyle.Primary),
+    );
+
+    await interaction.reply({
+      content: `**Tracked Subreddits:**\n${trackedSubreddits.map(s => `• r/${s}`).join('\n')}\n\n**Filter posts:**`,
+      components: [filterButtons],
+    });
+  },
 };
