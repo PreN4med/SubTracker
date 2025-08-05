@@ -1,11 +1,11 @@
 const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-const { fetchSubredditSuggestions } = require('../../utils/redditAPI');
+const { validateSubreddit, fetchSubredditSuggestions } = require('../../utils/redditAPI');
 const { loadTrackedSubreddits, saveTrackedSubreddits } = require('../../utils/dataUtils');
 
 module.exports = {
   data: new SlashCommandBuilder()
-    .setName('tracksubreddit') // Keep lowercase for Discord
-    .setDescription('Track a subreddit for new posts')
+    .setName('tracksubreddit')
+    .setDescription('Track a subreddit')
     .addStringOption(option =>
       option.setName('name')
         .setDescription('Subreddit name (e.g., "dankmemes")')
@@ -14,34 +14,40 @@ module.exports = {
     const subreddit = interaction.options.getString('name').toLowerCase();
     const trackedSubreddits = loadTrackedSubreddits();
 
+    // 1. Ensure trackedSubreddits is an array
+    if (!Array.isArray(trackedSubreddits)) {
+      await interaction.reply('❌ Subreddit list corrupted. Resetting...');
+      saveTrackedSubreddits([]);
+      return;
+    }
+
+    // 2. Check if already tracked
     if (trackedSubreddits.includes(subreddit)) {
       return interaction.reply(`❌ r/${subreddit} is already tracked.`);
     }
 
-    try {
-      const response = await fetch(`https://www.reddit.com/r/${subreddit}/about.json`);
-      if (response.ok) {
-        trackedSubreddits.push(subreddit);
-        saveTrackedSubreddits(trackedSubreddits);
-        await interaction.reply(`✅ Now tracking r/${subreddit}!`);
-      }
-    } catch (error) {
+    // 3. Validate subreddit
+    const isValid = await validateSubreddit(subreddit);
+    if (!isValid) {
       const suggestions = await fetchSubredditSuggestions(subreddit);
       if (suggestions.length === 0) {
         return interaction.reply('❌ Subreddit not found. No suggestions.');
       }
-
-      const buttons = suggestions.slice(0, 3).map(suggestion => 
+      const buttons = suggestions.slice(0, 3).map(suggestion =>
         new ButtonBuilder()
           .setCustomId(`track_${suggestion}`)
-          .setLabel(`Track r/${suggestion}`)
+          .setLabel(`r/${suggestion}`)
           .setStyle(ButtonStyle.Primary)
       );
-
-      await interaction.reply({
-        content: `❌ r/${subreddit} not found. Track these instead?`,
+      return interaction.reply({
+        content: `❌ r/${subreddit} doesn't exist. Try these:`,
         components: [new ActionRowBuilder().addComponents(buttons)],
       });
     }
+
+    // 4. Save valid subreddit
+    trackedSubreddits.push(subreddit);
+    saveTrackedSubreddits(trackedSubreddits);
+    await interaction.reply(`✅ Now tracking r/${subreddit}!`);
   },
 };
