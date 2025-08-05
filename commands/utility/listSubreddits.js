@@ -3,32 +3,38 @@ const { loadTrackedSubreddits } = require('../../utils/dataUtils');
 
 module.exports = {
   data: new SlashCommandBuilder()
-    .setName('listsubreddits') // Keep lowercase for Discord
-    .setDescription('List tracked subreddits with filters'),
+    .setName('listsubreddits')
+    .setDescription('List tracked subreddits with filtering options'),
   async execute(interaction) {
     const trackedSubreddits = loadTrackedSubreddits();
+    
     if (trackedSubreddits.length === 0) {
       return interaction.reply('No subreddits tracked yet. Use `/tracksubreddit` first!');
     }
 
-    const filterButtons = new ActionRowBuilder().addComponents(
-      new ButtonBuilder()
-        .setCustomId('filter_top')
-        .setLabel('Top Posts')
-        .setStyle(ButtonStyle.Success),
-      new ButtonBuilder()
-        .setCustomId('filter_hot')
-        .setLabel('Hot Posts')
-        .setStyle(ButtonStyle.Danger),
-      new ButtonBuilder()
-        .setCustomId('filter_new')
-        .setLabel('New Posts')
-        .setStyle(ButtonStyle.Primary),
-    );
+    // Create a button row for each subreddit with filter options
+    const subredditRows = trackedSubreddits.map(subreddit => {
+      return new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+          .setCustomId(`filter_${subreddit}_top`)
+          .setLabel(`Top in r/${subreddit}`)
+          .setStyle(ButtonStyle.Success),
+        new ButtonBuilder()
+          .setCustomId(`filter_${subreddit}_hot`)
+          .setLabel(`Hot in r/${subreddit}`)
+          .setStyle(ButtonStyle.Danger),
+        new ButtonBuilder()
+          .setCustomId(`filter_${subreddit}_new`)
+          .setLabel(`New in r/${subreddit}`)
+          .setStyle(ButtonStyle.Primary)
+      );
+    });
 
     await interaction.reply({
-      content: `**Tracked Subreddits:**\n${trackedSubreddits.map(s => `• r/${s}`).join('\n')}\n\n**Filter posts:**`,
-      components: [filterButtons],
+      content: '**Tracked Subreddits:**\n' + 
+               trackedSubreddits.map(s => `• r/${s}`).join('\n') +
+               '\n\n**Select a filter for each subreddit:**',
+      components: subredditRows,
     });
   },
 };
