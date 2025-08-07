@@ -1,3 +1,4 @@
+const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const fs = require('node:fs');
 const path = require('node:path');
 const { Client, Collection, GatewayIntentBits } = require('discord.js');
@@ -67,6 +68,7 @@ client.on('interactionCreate', async interaction => {
     // Handle filter selection
     if (action === 'filter') {
       const [subreddit, filterType] = values;
+      const cleanSubreddit = subreddit.replace(/^\/?r\//, '').trim();
       const posts = await fetchPosts(subreddit, filterType);
       
       if (posts.length === 0) {

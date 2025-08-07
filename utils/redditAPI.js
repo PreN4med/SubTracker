@@ -4,17 +4,22 @@ const axios = require('axios');
 async function validateSubreddit(subreddit) {
   try {
     const response = await axios.get(`https://www.reddit.com/r/${subreddit}/about.json`);
-    return response.data?.data?.display_name === subreddit; // TRUE only if valid
+    // Check if the subreddit exists and is accessible
+    const data = response.data?.data;
+    return data && !data.over18 && data.display_name; // Return true if valid and accessible
   } catch (error) {
-    return false; // Invalid subreddit
+    // If we get a 404 or other error, the subreddit doesn't exist or isn't accessible
+    return false;
   }
 }
 
 // Fetch similar subreddits for suggestions
 async function fetchSubredditSuggestions(query) {
   try {
-    const response = await axios.get(`https://www.reddit.com/subreddits/search.json?q=${query}`);
-    return response.data.data.children.map(sub => sub.data.display_name);
+    const response = await axios.get(`https://www.reddit.com/subreddits/search.json?q=${query}&limit=10`);
+    return response.data.data.children
+      .map(sub => sub.data.display_name)
+      .filter(name => name.toLowerCase().includes(query.toLowerCase())); // Better matching
   } catch (error) {
     console.error('Error fetching suggestions:', error);
     return [];

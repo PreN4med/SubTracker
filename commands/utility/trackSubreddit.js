@@ -11,18 +11,22 @@ module.exports = {
         .setDescription('Subreddit name to track')
         .setRequired(true)),
   async execute(interaction) {
-    const inputSubreddit = interaction.options.getString('name').toLowerCase();
+    const inputSubreddit = interaction.options.getString('name').trim(); // Remove toLowerCase()
     const trackedSubreddits = loadTrackedSubreddits();
 
-    // Check if already tracked
-    if (trackedSubreddits.includes(inputSubreddit)) {
-      return interaction.reply(`❌ r/${inputSubreddit} is already tracked.`);
+    // Check if already tracked (case-insensitive comparison for duplicates)
+    const alreadyTracked = trackedSubreddits.find(sub => 
+      sub.toLowerCase() === inputSubreddit.toLowerCase()
+    );
+    
+    if (alreadyTracked) {
+      return interaction.reply(`❌ r/${alreadyTracked} is already tracked.`);
     }
 
-    // Validate subreddit
+    // Validate subreddit with original case
     const isValid = await validateSubreddit(inputSubreddit);
     if (isValid) {
-      trackedSubreddits.push(inputSubreddit);
+      trackedSubreddits.push(inputSubreddit); // Store with original case
       saveTrackedSubreddits(trackedSubreddits);
       return interaction.reply(`✅ Now tracking r/${inputSubreddit}!`);
     }
@@ -33,7 +37,7 @@ module.exports = {
       return interaction.reply('❌ Subreddit not found. No suggestions available.');
     }
 
-    // 
+    // Create suggestion buttons
     const buttons = suggestions.slice(0, 3).map(suggestion =>
       new ButtonBuilder()
         .setCustomId(`track_${suggestion}`) 
