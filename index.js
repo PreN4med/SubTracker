@@ -50,25 +50,30 @@ for (const file of eventFiles) {
   }
 }
 
+
+
 // Button interaction handler with all features
 client.on('interactionCreate', async interaction => {
   if (!interaction.isButton()) return;
 
-  const [action, ...values] = interaction.customId.split('_');
+  const customId = interaction.customId;
   const trackedSubreddits = loadTrackedSubreddits();
-
   try {
-    // Handle subreddit selection
-    if (action === 'subreddit') {
-      const subreddit = values.join('_');
-      const listsubredditsCmd = client.commands.get('listsubreddits');
-      return listsubredditsCmd.showFilterOptions(interaction, subreddit);
-    }
+    // Handle filter selection - need special parsing due to underscores in subreddit names
+    if (customId.startsWith('filter_')) {
+      // Parse customId more carefully to handle underscores in subreddit names
+      const filterMatch = customId.match(/^filter_(.+)_(top|hot|new)$/);
+      
+      if (!filterMatch) {
+        return await interaction.reply({
+          content: '❌ Invalid filter button format.',
+          ephemeral: true
+        });
+      }
 
-    // Handle filter selection
-    if (action === 'filter') {
-      const [subreddit, filterType] = values;
-      const cleanSubreddit = subreddit.replace(/^\/?r\//, '').trim();
+      const subreddit = filterMatch[1];
+      const filterType = filterMatch[2];
+      
       const posts = await fetchPosts(subreddit, filterType);
       
       if (posts.length === 0) {
@@ -86,6 +91,17 @@ client.on('interactionCreate', async interaction => {
         content: `**Top 3 ${filterType.toUpperCase()} Posts in r/${subreddit}:**\n${postList}`,
         components: createBackButton(subreddit)
       });
+      return;
+    }
+
+    
+    const [action, ...values] = customId.split('_');
+
+    // Handle subreddit selection
+    if (action === 'subreddit') {
+      const subreddit = values.join('_');
+      const listsubredditsCmd = client.commands.get('listsubreddits');
+      return listsubredditsCmd.showFilterOptions(interaction, subreddit);
     }
 
     // Handle back button
@@ -103,9 +119,9 @@ client.on('interactionCreate', async interaction => {
 
     // Track subreddit button
     if (action === 'track') {
-      const subredditToTrack = values.join('_').toLowerCase();
+      const subredditToTrack = values.join('_');
       
-      if (trackedSubreddits.includes(subredditToTrack)) {
+      if (trackedSubreddits.some(sub => sub.toLowerCase() === subredditToTrack.toLowerCase())) {
         return await interaction.update({
           content: `❌ r/${subredditToTrack} is already tracked.`,
           components: []
@@ -146,6 +162,7 @@ client.on('interactionCreate', async interaction => {
     });
   }
 });
+
 
 // Helper function to create back button
 function createBackButton(subreddit) {

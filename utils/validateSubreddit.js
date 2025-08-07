@@ -1,18 +1,22 @@
 const { fetchSubredditSuggestions } = require('./redditAPI'); 
 
 async function validateSubreddit(input) {
-    const subreddit = input.replace(/^\/?r\//, '').trim().toLowerCase();
+    const subreddit = input.replace(/^\/?r\//, '').trim();
 
-    if (!/^[a-z0-9_]+$/.test(subreddit)) {
-        const suggestions = await fetchSubredditSuggestions(subreddit);
+    // Check if it contains invalid characters (spaces, special chars except underscore)
+    if (!/^[a-zA-Z0-9_]+$/.test(subreddit)) {
         return {
             isValid: false,
-            error: `"${input}" is not a valid subreddit name. Only letters, numbers, and underscores are allowed.`,
-            suggestions: suggestions.slice(0, 3), 
+            error: `"${input}" is not a valid subreddit name. Subreddit names can only contain letters, numbers, and underscores (no spaces or special characters).`,
+            normalized: null
         };
     }
 
-    return { isValid: true, normalized: subreddit };
+    return { 
+        isValid: true, 
+        normalized: subreddit,
+        error: null
+    };
 }
 
 module.exports = { validateSubreddit };
