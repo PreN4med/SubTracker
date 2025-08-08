@@ -6,7 +6,7 @@ async function fetchLatestPost(subreddit) {
         // Make a request to Reddit's JSON API for the latest post in the subreddit
         const response = await axios.get(`https://www.reddit.com/r/${subreddit}/new.json?limit=1`);
         
-        // Reddit returns a list of posts, we just want the first one
+        // Reddit returns a list of posts
         const post = response.data.data.children[0].data;
 
         return {

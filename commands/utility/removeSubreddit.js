@@ -1,3 +1,4 @@
+// Importing functions
 const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { loadTrackedSubreddits, saveTrackedSubreddits } = require('../../utils/dataUtils');
 
@@ -21,7 +22,7 @@ module.exports = {
         .setStyle(ButtonStyle.Danger)
     );
 
-    // Split buttons into rows (max 5 buttons per row)
+    // Split buttons into rows 
     const buttonRows = [];
     for (let i = 0; i < subredditButtons.length; i += 5) {
       buttonRows.push(
@@ -30,6 +31,7 @@ module.exports = {
         )
       );
     }
+
 
     await interaction.reply({
       content: '**Select a subreddit to remove:**',

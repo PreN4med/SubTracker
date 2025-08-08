@@ -1,7 +1,10 @@
+// Importing functions
 const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { fetchSubredditSuggestions, validateSubreddit } = require('../../utils/redditAPI');
 const { loadTrackedSubreddits, saveTrackedSubreddits } = require('../../utils/dataUtils');
 const { validateSubreddit: validateInput } = require('../../utils/validateSubreddit');
+
+
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -15,24 +18,26 @@ module.exports = {
     const rawInput = interaction.options.getString('name').trim();
     const trackedSubreddits = loadTrackedSubreddits();
 
-    // First validate the input format
+    // Validating the input 
     const inputValidation = await validateInput(rawInput);
     
     if (!inputValidation.isValid) {
-      // If input is invalid (like "genshin impact"), get suggestions based on the raw input
+      // Get recommended subreddits with names closest to the input
       const suggestions = await fetchSubredditSuggestions(rawInput);
       
       if (suggestions.length === 0) {
         return interaction.reply(`❌ ${inputValidation.error}\n\nNo suggestions found for "${rawInput}".`);
       }
-
+      
+      // Generates the suggestion buttons
       const buttons = suggestions.slice(0, 3).map(suggestion =>
         new ButtonBuilder()
           .setCustomId(`track_${suggestion}`) 
           .setLabel(`r/${suggestion}`)
           .setStyle(ButtonStyle.Primary)
       );
-
+      
+      // Recommendation buttons if the input is not accepted
       return interaction.reply({
         content: `❌ ${inputValidation.error}\n\n**Did you mean one of these?**`,
         components: [new ActionRowBuilder().addComponents(buttons)],
@@ -42,7 +47,7 @@ module.exports = {
     // Use the normalized subreddit name
     const inputSubreddit = inputValidation.normalized;
 
-    // Check if already tracked (case-insensitive comparison for duplicates)
+    // Check if already tracked
     const alreadyTracked = trackedSubreddits.find(sub => 
       sub.toLowerCase() === inputSubreddit.toLowerCase()
     );
@@ -65,6 +70,7 @@ module.exports = {
       return interaction.reply('❌ Subreddit not found. No suggestions available.');
     }
 
+    // Create the suggestion buttons
     const buttons = suggestions.slice(0, 3).map(suggestion =>
       new ButtonBuilder()
         .setCustomId(`track_${suggestion}`) 
