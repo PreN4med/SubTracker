@@ -1,0 +1,16 @@
+{
+  "1212266881445134378": {
+    "1270944040774537306": {
+      "genshin_impact": {
+        "enabled": true,
+        "minUpvotes": 1,
+        "enabledAt": 1755641074092
+      },
+      "roblox": {
+        "enabled": true,
+        "minUpvotes": 10,
+        "enabledAt": 1756769342295
+      }
+    }
+  }
+}
